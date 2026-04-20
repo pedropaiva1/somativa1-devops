@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDependencyInjectionHandler();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -19,6 +20,8 @@ app.UseHttpsRedirection();
 app.UseCors(PoliciesConstants.DefaultCorsPolicy);
 app.UseAuthorization();
 app.MapControllers();
+
+app.MapHealthChecks("/health");
 
 app.Run();
 
