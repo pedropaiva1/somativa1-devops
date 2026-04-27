@@ -1,0 +1,73 @@
+name: Discord Alerts
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  push:
+    branches: [main]
+
+jobs:
+  notify-ci-result:
+    if: ${{ github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build CI message
+        id: ci_msg
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          COMMIT: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          ACTOR: ${{ github.event.workflow_run.actor.login }}
+        run: |
+          STATUS="✅"
+          if [ "$CONCLUSION" != "success" ]; then STATUS="❌"; fi
+          {
+            echo "message<<EOF"
+            echo "${STATUS} CI finalizado"
+            echo "Workflow: ${WORKFLOW_NAME}"
+            echo "Status: ${CONCLUSION}"
+            echo "Branch: ${BRANCH}"
+            echo "Commit: ${COMMIT}"
+            echo "Autor: ${ACTOR}"
+            echo "Execução: ${RUN_URL}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send CI alert to Discord
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MESSAGE: ${{ steps.ci_msg.outputs.message }}
+          DISCORD_USERNAME: GitHub Actions
+
+  notify-main-push:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build push message
+        id: push_msg
+        env:
+          BRANCH: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          ACTOR: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+        run: |
+          {
+            echo "message<<EOF"
+            echo "🔔 Novo push na main"
+            echo "Repo: ${REPO}"
+            echo "Branch: ${BRANCH}"
+            echo "Commit: ${COMMIT}"
+            echo "Autor: ${ACTOR}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send push alert to Discord
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_MESSAGE: ${{ steps.push_msg.outputs.message }}
+          DISCORD_USERNAME: GitHub Actions
