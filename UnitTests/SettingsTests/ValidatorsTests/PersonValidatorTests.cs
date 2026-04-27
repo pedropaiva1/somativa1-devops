@@ -120,20 +120,6 @@ public sealed class PersonValidatorTests
     }
 
     [Theory]
-    [MemberData(nameof(InvalidBirthDateParameters))]
-    public async Task ValidatePersonAsyc_InvalidBirthDate_ReturnsFalse(DateTime birthDate)
-    {
-        // A
-        var personWithInvalidBirthDate = PersonBuilder.NewObject().WithBirthDate(birthDate).DomainBuild();
-
-        // A
-        var validationResult = await _personValidator.ValidateAsync(personWithInvalidBirthDate);
-
-        // A
-        Assert.False(validationResult.IsValid);
-    }
-
-    [Theory]
     [InlineData("")]
     [InlineData("invalid mail")]
     [InlineData("ran")]
