@@ -1,11 +1,39 @@
-name: Docker Build and Push
+name: CI - Build, Test and Publish
 
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, reopened, synchronize]
 
 jobs:
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: dotnet test UnitTests/UnitTests.csproj --no-build --configuration Release --verbosity normal
+
+      - name: Run integration tests
+        run: dotnet test IntegrationTests/IntegrationTests.csproj --no-build --configuration Release --verbosity normal
+
   build-and-push:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     
     steps:
